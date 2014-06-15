@@ -1,0 +1,49 @@
+Name: record
+Version: 1.0.0
+Cabal-Version: >=1.8.0.2
+Build-Type: Simple
+License: BSD3
+License-File: LICENSE
+Copyright: 2014 Gabriel Gonzalez
+Author: Gabriel Gonzalez
+Maintainer: Gabriel439@gmail.com
+Bug-Reports: https://github.com/Gabriel439/Haskell-Record-Library/issues
+Synopsis: Command line utility to document command environments and output
+Description: This package creates the @record@ executable that you can use to
+  wrap other commands to record the following information in @~/.record@:
+  .
+  * The current @git@ branch
+  .
+  * The current @git@ SHA
+  .
+  * The current @git@ diff
+  .
+  * The current @hostname@
+  .
+  * The current directory
+  .
+  * The current date and time
+  .
+  * The current user
+  .
+  * All command output, prefixing @stdout@ lines with @"O: "@ and @stderr@
+    lines with @"E: "@
+  .
+  To use this tool, just prefix your shell commands with @record@
+Category: Control, Concurrency
+Source-Repository head
+    Type: git
+    Location: https://github.com/Gabriel439/Haskell-Record-Library
+
+Executable record
+    Hs-Source-Dirs: src
+    Build-Depends:
+        base            >= 4       && < 5  ,
+        system-fileio   >= 0.2.1   && < 0.4,
+        mvc             >= 1.0.0   && < 1.1,
+        pipes           >= 4.0.0   && < 4.2,
+        process         >= 1.0.1.1 && < 1.3,
+        system-filepath >= 0.3.1   && < 0.5,
+        transformers    >= 0.2.0.0 && < 0.5
+    Main-Is: Record.hs
+    GHC-Options: -O2 -Wall
