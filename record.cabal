@@ -8,7 +8,7 @@ Copyright: 2014 Gabriel Gonzalez
 Author: Gabriel Gonzalez
 Maintainer: Gabriel439@gmail.com
 Bug-Reports: https://github.com/Gabriel439/Haskell-Record-Library/issues
-Synopsis: Command line utility to document command environments and output
+Synopsis: Command line utility to record command environments and output
 Description: This package creates the @record@ executable that you can use to
   wrap other commands to record the following information in @~/.record@:
   .
