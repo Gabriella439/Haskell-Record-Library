@@ -26,8 +26,7 @@ Description: This package creates the @record@ executable that you can use to
   .
   * The current user
   .
-  * All command output, prefixing @stdout@ lines with @"O: "@ and @stderr@
-    lines with @"E: "@
+  * All command output
   .
   To use this tool, just prefix your shell commands with @record@
 Category: Control, Concurrency
