@@ -3,8 +3,8 @@
 module Main where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.Async (mapConcurrently)
-import Control.Exception (SomeException, catch, throwIO)
+import Control.Concurrent.Async (race_)
+import Control.Exception (SomeException, catch, finally, throwIO)
 import qualified Data.ByteString as ByteString
 import Data.Foldable (forM_)
 import Filesystem (getHomeDirectory, withFile)
@@ -25,7 +25,7 @@ main :: IO ()
 main = do
     args <- getArgs
     home <- getHomeDirectory
-    withFile (home </> ".record") IO.AppendMode $ \handle -> (do
+    withFile (home </> ".record") IO.AppendMode $ \handle -> ((do
         let run label cmd args' = do
                 let trim (_, x, y) = (x, y)
 
@@ -51,15 +51,14 @@ main = do
                 (_, mOut , mErr, _) <- createProcess (proc cmd rest)
                     { std_out = CreatePipe, std_err = CreatePipe }
                 forM_ ((,) <$> mOut <*> mErr) $ \(hOut, hErr) -> do
-                    let handlePairs = [(hOut, IO.stdout), (hErr, IO.stderr)]
-                    flip mapConcurrently handlePairs $ \(hSrc, hDest) -> do
-                        IO.hSetBuffering hSrc  IO.NoBuffering
-                        IO.hSetBuffering hDest IO.NoBuffering
-                        runEffect $ for (fromHandle hSrc) $ \bs -> lift $ do
-                            ByteString.hPutStr hDest  bs
-                            ByteString.hPutStr handle bs
-        IO.hPutStrLn handle "" )
+                    let redirect hSrc hDest = do
+                            IO.hSetBuffering hSrc  IO.NoBuffering
+                            IO.hSetBuffering hDest IO.NoBuffering
+                            runEffect $ for (fromHandle hSrc) $ \bs -> lift $ do
+                                ByteString.hPutStr hDest  bs
+                                ByteString.hPutStr handle bs
+                    redirect hOut IO.stdout `race_` redirect hErr IO.stderr )
+        `finally` (IO.hPutStrLn handle "") )
         `catch` (\e -> do
             IO.hPrint handle (e :: SomeException)
-            IO.hPutStrLn handle ""
             throwIO e )
