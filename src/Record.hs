@@ -3,18 +3,18 @@
 module Main where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Category (id)
+import Control.Concurrent.Async (mapConcurrently)
 import Control.Exception (SomeException, catch, throwIO)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
+import qualified Data.ByteString as ByteString
+import Data.Foldable (forM_)
 import Filesystem (getHomeDirectory, withFile)
 import Filesystem.Path ((</>))
-import MVC (runMVC, Buffer(Single), asSink, (<>))
-import MVC.Prelude (producer, stdoutLines)
-import qualified Pipes.Prelude as Pipes
+import Pipes (runEffect, for, lift)
+import Pipes.ByteString (fromHandle)
 import System.Environment (getArgs)
 import System.Process
 import qualified System.IO as IO
-import Prelude hiding (id, FilePath)
 
 run :: String -> String -> [String] -> ReaderT IO.Handle IO ()
 run label cmd args = ReaderT $ \handle -> do
@@ -70,22 +70,16 @@ main = do
             diff
         IO.hPutStrLn handle ("Command: " ++ unwords args)
         case args of
-            []       -> return ()
+            []       -> putStrLn "Usage: record COMMAND [ARGUMENT ...]"
             cmd:rest -> do
                 (_, mOut , mErr, _) <- createProcess (proc cmd rest)
                     { std_out = CreatePipe, std_err = CreatePipe }
-                case (,) <$> mOut <*> mErr of
-                    Nothing           -> return ()
-                    Just (hOut, hErr) -> do
-                        runMVC () id $ do
-                            let stdOut = producer Single (Pipes.fromHandle hOut)
-                                stdErr = producer Single (Pipes.fromHandle hErr)
-                            c <- fmap (fmap ("O: " ++)) stdOut
-                              <> fmap (fmap ("E: " ++)) stdErr
-                            let v = asSink (IO.hPutStrLn handle)
-                                 <> stdoutLines
-                            return (v, c)
-
+                forM_ ((,) <$> mOut <*> mErr) $ \(hOut, hErr) ->
+                    flip mapConcurrently [hOut, hErr] $ \hSrc -> do
+                        IO.hSetBuffering hSrc IO.NoBuffering
+                        runEffect $ for (fromHandle hSrc) $ \bs -> lift $ do
+                            ByteString.hPutStr handle bs
+                            ByteString.putStr         bs
         IO.hPutStrLn handle "" )
         `catch` (\e -> do
             IO.hPrint handle (e :: SomeException)
