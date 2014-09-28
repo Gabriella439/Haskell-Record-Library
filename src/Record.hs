@@ -19,6 +19,7 @@ indent = unlines . transform . lines
     transform (l:ls) = l:map ("         " ++) ls
     transform  []    = [""]
 
+-- | Run the supplied command, logging useful context and output to `~/.record`
 main :: IO ()
 main = do
     args <- getArgs
@@ -34,6 +35,7 @@ main = do
                         return ("", show e) )
                 hPutStr handle (if null e then indent i else "N/A\n")
 
+        -- Log context
         run "Date   " "date"     []
         run "User   " "whoami"   []
         run "Host   " "hostname" []
@@ -43,9 +45,11 @@ main = do
         run "Diff   " "git"      ["diff"]
 
         hPutStrLn handle ("Command: " ++ unwords args)
+
         case args of
             []       -> putStrLn "Usage: record COMMAND [ARGUMENT ...]"
             cmd:rest -> do
+                -- Log output
                 (_, Just out, Just err, _) <- createProcess (proc cmd rest) { std_out = CreatePipe, std_err = CreatePipe }
 
                 let redirect src dest = do
