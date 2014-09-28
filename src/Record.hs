@@ -5,6 +5,8 @@ module Main where
 import Control.Concurrent.Async (race_)
 import Control.Exception (SomeException, catch, finally, throwIO)
 import Control.Monad (forM_)
+import qualified Data.Text.Lazy    as Text
+import qualified Data.Text.Lazy.IO as Text
 import Filesystem (getHomeDirectory, withFile)
 import Filesystem.Path ((</>))
 import System.Environment (getArgs)
@@ -49,10 +51,10 @@ main = do
                 let redirect src dest = do
                         hSetBuffering src  NoBuffering
                         hSetBuffering dest NoBuffering
-                        bs <- hGetContents src
-                        forM_ (lines bs) $ \line -> do
-                            hPutStrLn dest   line
-                            hPutStrLn handle line
+                        bs <- Text.hGetContents src
+                        forM_ (Text.lines bs) $ \line -> do
+                            Text.hPutStrLn dest   line
+                            Text.hPutStrLn handle line
 
                 redirect out stdout `race_` redirect err stderr )
         `finally` (hPutStrLn handle "") )
